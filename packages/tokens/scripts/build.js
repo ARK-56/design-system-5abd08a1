@@ -32,26 +32,31 @@ function buildTailwindColors() {
 
     border: v('color-border-default'),
     'border-strong': v('color-border-strong'),
+    'border-control': v('color-border-control'),
     'border-focus': v('color-border-focus'),
 
     brand: {
       DEFAULT: v('color-brand-default'),
       hover: v('color-brand-hover'),
       active: v('color-brand-active'),
-      subtle: v('color-brand-subtle')
+      subtle: v('color-brand-subtle'),
+      'on-subtle': v('color-brand-on-subtle')
     },
     danger: {
       DEFAULT: v('color-danger-default'),
       hover: v('color-danger-hover'),
-      subtle: v('color-danger-subtle')
+      subtle: v('color-danger-subtle'),
+      'on-subtle': v('color-danger-on-subtle')
     },
     warning: {
       DEFAULT: v('color-warning-default'),
-      subtle: v('color-warning-subtle')
+      subtle: v('color-warning-subtle'),
+      'on-subtle': v('color-warning-on-subtle')
     },
     success: {
       DEFAULT: v('color-success-default'),
-      subtle: v('color-success-subtle')
+      subtle: v('color-success-subtle'),
+      'on-subtle': v('color-success-on-subtle')
     },
     // Primitive neutral scale exposed directly for one-off utility needs.
     neutral: Object.fromEntries(

@@ -18,7 +18,7 @@ export const Checkbox = React.forwardRef<React.ElementRef<typeof CheckboxPrimiti
         ref={ref}
         id={checkboxId}
         className={cn(
-          "peer h-5 w-5 shrink-0 rounded-sm border border-border-strong bg-surface",
+          "peer h-5 w-5 shrink-0 rounded-sm border border-border-control bg-surface",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:border-border-focus",
           "data-[state=checked]:bg-brand data-[state=checked]:border-brand",
           "disabled:cursor-not-allowed disabled:opacity-50",
