@@ -1,8 +1,12 @@
 # ARK-56 Design System
 
-A white-label design system for client projects: a two-tier token pipeline (`@ark-56/tokens`)
-feeding a React component library (`@ark-56/ui`). Components never hardcode a brand — they only
-ever consume semantic tokens — so re-skinning for a new client is a token swap, not a rewrite.
+An internal, white-label design system used to build client sites: a two-tier token pipeline
+(`@ark-56/tokens`) feeding a React component library (`@ark-56/ui`). Components never hardcode a
+brand — they only ever consume semantic tokens — so standing up a new client is a token swap rather
+than a rewrite.
+
+This is a private studio asset. It is not distributed to clients, though it is built so other
+people, and their coding agents, can work from it later.
 
 ## Packages
 
@@ -22,58 +26,106 @@ packages/
 ```bash
 pnpm install
 pnpm build            # builds tokens, then ui, in the right order (via Turborepo)
+pnpm test             # 66 tests: token contract, CSS contract, behaviour, a11y
+pnpm lint
 pnpm storybook        # browse every component at localhost:6006
 ```
+
+## The rules
+
+These are the constraints the whole thing rests on. All four are enforced by
+`packages/ui/test/source-hygiene.test.ts`, so breaking one fails `pnpm test` rather than shipping
+quietly.
+
+1. **Components consume the semantic layer only.** Never a primitive utility (`bg-neutral-200`),
+   never a raw hex. The Tailwind theme does expose the raw `neutral` scale, but that escape hatch
+   is for consuming apps, not for components here.
+2. **Spacing stays on the token scale.** Whole steps `0`–`20` plus half steps `0.5`, `1.5`, `2.5`.
+   Anything else falls through to Tailwind's own defaults, where no re-theme can reach it.
+3. **No invented z-index.** Use the named layers: `z-dropdown`, `z-sticky`, `z-overlay`, `z-modal`,
+   `z-toast`.
+4. **Every foreground/background pairing clears WCAG.** New pairings go in the `PAIRINGS` table in
+   `packages/tokens/test/tokens.test.mjs`, which fails if one drops below its threshold.
 
 ## How the token pipeline works
 
 `packages/tokens/tokens/` has two files:
 
-- **`primitives.json`** - raw scales with no meaning: `color.neutral.900`, `space.4`, `radius.md`.
-  Never referenced directly by components.
-- **`semantic.json`** - the layer components actually consume: `color.bg.canvas`,
-  `color.text.primary`, `color.brand.default`. Each value points at a primitive.
+- **`primitives.json`** — raw scales with no meaning: `color.neutral.900`, `space.4`, `radius.md`,
+  `z.300`. Never referenced directly by components.
+- **`semantic.json`** — the layer components actually consume. Each value points at a primitive.
 
 `pnpm tokens:build` (Style Dictionary) turns those into:
 
-- `build/css/variables.css` - CSS custom properties. Semantic vars reference primitive vars
-  (`--color-text-primary: var(--color-neutral-900)`), so overriding a primitive cascades everywhere
-  automatically.
-- `build/tailwind/theme.cjs` - a `theme.extend` object consumed by `packages/ui/tailwind.config.js`,
-  mapping clean Tailwind class names (`bg-surface`, `text-foreground`, `bg-brand`) to those same CSS
-  variables.
-- `build/js/*` / `build/ts/*` - the same tokens as plain JS/TS, for anything that needs raw values
-  outside of CSS (e.g. generating a PDF, or a canvas/chart library that can't read CSS variables).
+- `build/css/variables.css` — CSS custom properties. Semantic vars reference primitive vars
+  (`--color-text-primary: var(--color-neutral-900)`), so overriding a primitive cascades everywhere.
+- `build/tailwind/theme.cjs` — a `theme.extend` object consumed by `packages/ui/tailwind.config.js`,
+  mapping clean class names (`bg-surface`, `text-foreground`, `bg-brand`) to those same CSS vars.
+- `build/js/*` / `build/ts/*` — the same tokens as plain JS/TS, for anything that can't read CSS
+  variables (a PDF generator, a canvas or chart library).
+
+## Semantic token vocabulary
+
+The full list components are allowed to use, with the Tailwind class each produces.
+
+| Token | Class | Use |
+| --- | --- | --- |
+| `color.bg.canvas` | `bg-canvas` | the page ground |
+| `color.bg.surface` | `bg-surface` | cards, inputs, anything sitting on the canvas |
+| `color.bg.surface-sunken` | `bg-surface-sunken` | wells and insets — tab strips, secondary buttons |
+| `color.bg.surface-sunken-hover` | `bg-surface-sunken-hover` | hover state for the above |
+| `color.bg.surface-raised` | `bg-surface-raised` | modals and popovers |
+| `color.bg.overlay` | `bg-overlay` | modal scrim |
+| `color.text.primary` | `text-foreground` | body text |
+| `color.text.secondary` | `text-foreground-secondary` | hints, descriptions, captions |
+| `color.text.disabled` | `text-foreground-disabled` | disabled labels and placeholders |
+| `color.text.on-brand` / `on-danger` | `text-on-brand` / `text-on-danger` | text on a filled button |
+| `color.text.link` | `text-link` | inline links |
+| `color.border.default` | `border-border` | decorative edges — cards, dividers |
+| `color.border.control` | `border-border-control` | edges that *identify* a form field (clears 3:1) |
+| `color.border.focus` | `border-border-focus`, `ring-border-focus` | focus indication |
+| `color.{brand,danger}.{default,hover,active}` | `bg-brand`, `bg-danger-hover`, … | filled interactive surfaces |
+| `color.{brand,danger,warning,success}.subtle` | `bg-brand-subtle`, … | tinted status backgrounds |
+| `color.{brand,danger,warning,success}.on-subtle` | `text-brand-on-subtle`, … | text **on** those tints |
+| `z.{dropdown,sticky,overlay,modal,toast}` | `z-modal`, … | stacking order |
+| `component.*` | `h-[var(--component-control-height-md)]`, … | per-component metrics |
+
+The `subtle` / `on-subtle` split matters: a foreground chosen to sit on white does not clear
+contrast on a tinted wash. Use `on-subtle` whenever the background is a `subtle`.
 
 ## Re-theming for a new client
 
-Two levers, depending on how permanent the change is:
+Two levers, depending on how permanent the change is.
 
-1. **Rebuild (the primary lever, for a real client project).** Edit
-   `packages/tokens/tokens/primitives.json` (new brand colors, radius, type scale) — and
-   `semantic.json` too, if the client's IA genuinely differs (e.g. no "warning" state). Run
-   `pnpm build`. Every component picks up the new look with zero component-code changes, because
-   components only ever reference semantic classes/vars, never raw hex values.
-2. **Runtime override (for previews, or multiple brands in one running app).** Wrap a subtree in
-   `<ThemeProvider theme={{ "color-brand-default": "#0f766e", ... }}>`. This sets scoped CSS variable
-   overrides and doesn't require a rebuild - handy for a sales demo or a multi-tenant app, but the
-   rebuild path above is the one to use for a real client ship.
+1. **Rebuild — the primary lever.** Edit `packages/tokens/tokens/primitives.json` (new brand colours,
+   radius, type scale) and `semantic.json` too, if the client's IA genuinely differs — e.g. no
+   warning state. Run `pnpm build`. Every component picks up the new look with no component-code
+   changes, because components only reference semantic classes.
+2. **Runtime override — for previews or multi-tenant apps.** Wrap a subtree in
+   `<ThemeProvider theme={{ "color-brand-default": "#0f766e" }}>`. Scoped CSS variable overrides,
+   no rebuild. Good for a demo; use the rebuild path for a real ship.
+
+This has been exercised once end-to-end, with a deliberately unlike second theme — violet brand,
+warm neutrals, serif type, square corners, hard offset shadows. It built clean, and the two
+stylesheets differed only inside the `:root` token block, meaning no theme value is baked into a
+utility class. `pnpm test` now asserts that property permanently.
+
+## The default theme
+
+The ramp is a deep teal on true greys — a deliberate choice for a technical identity rather than a
+generic SaaS indigo. `brand.500` (`#178c81`) anchors it and is used for the focus ring.
+
+Text-bearing surfaces use `brand.600` (`#0f7067`) instead, because white on `brand.500` measures
+4.11:1 and normal text needs 4.5:1. The same shift applies to danger. Swap the whole thing per
+client using the workflow above.
 
 ## Components (v0.1)
 
-Button, Input, Checkbox, Card, Badge, Dialog, Tabs, Toast. Interactive/accessible behavior comes
-from Radix UI primitives; visual styling comes entirely from the token-driven Tailwind classes above.
+Button, Input, Checkbox, Card, Badge, Dialog, Tabs, Toast. Interactive and accessible behaviour
+comes from Radix UI primitives; visual styling comes entirely from token-driven Tailwind classes.
 Variants are defined with `class-variance-authority` (see any component's `*Variants` export).
 
-The default theme in `primitives.json` is a deep teal (`#178c81`) on true greys — a deliberate
-default rather than a generic SaaS-indigo or warm-terracotta placeholder, chosen to suit a
-technical/engineering identity. (I couldn't pull an exact color from your GitHub avatar directly —
-`avatars.githubusercontent.com` isn't reachable from this sandbox — so this is a considered
-placeholder, not a color sampled from it.) Swap it out per client using the re-theming workflow
-above — nothing in the component layer references these values directly.
-
-Storybook (`pnpm storybook`) is both the working documentation and something you can point a
-prospective client at directly.
+Storybook is the working documentation.
 
 ## Using `@ark-56/ui` in a client's Next.js app
 
@@ -90,22 +142,53 @@ import "@ark-56/ui/styles.css";
 import { Button, Card, CardHeader, CardTitle } from "@ark-56/ui";
 ```
 
-If the package isn't published to a registry yet, use a `workspace:*`/`file:` or git dependency
-until it is (see "Publishing" below).
+The bundle carries a `"use client"` banner, so it can be imported from a server component without
+the App Router complaining. Nothing is published to a registry yet — use a `workspace:*`, `file:` or
+git dependency.
+
+## Testing
+
+`pnpm test` runs three layers, in `packages/tokens/test` and `packages/ui/test`:
+
+- **Token contract** (node) — every semantic reference resolves to a primitive that exists, no
+  semantic token hardcodes a hex, status families keep a consistent shape, and every pairing the
+  components compose clears WCAG.
+- **CSS contract** (reads `dist/`) — asserts against the *built* stylesheet, catching bugs that
+  live between source and output: a utility Tailwind never generated, or one it generated with the
+  wrong meaning. jsdom applies no stylesheet, so nothing else can see these.
+- **Behaviour and a11y** (jsdom) — rendering, labelling, keyboard interaction, and `axe` across
+  representative components. `color-contrast` is disabled there because jsdom has no layout engine;
+  the token layer covers contrast far more precisely.
 
 ## Versioning & publishing
 
-Not wired up yet - recommended next step is
-[Changesets](https://github.com/changesets/changesets) (`pnpm add -Dw @changesets/cli`) so each
-client-facing change ships as a proper semver bump, and a private registry (GitHub Packages or
-npm) so client Next.js projects can `pnpm add @ark-56/ui` like any other dependency instead of
-pointing at this repo directly.
+Deliberately not wired up. Changesets and a private registry exist to protect consumers you do not
+control, and right now there are none. The trigger to add them is the first consumer you cannot
+personally fix — not a date. Publishing before the component API conventions settle would turn
+every convention fix into a breaking change.
 
-## Known follow-ups (fast-follow, not blocking v0.1)
+## Known follow-ups
 
-- The Tailwind color/spacing mapping in `packages/tokens/scripts/build.js` is hand-written for
-  clarity (`bg-surface` instead of the auto-derived, redundant `bg-bg-surface`). If the semantic
-  token *names* change, update that mapping in the same commit.
-- No visual regression testing yet (Chromatic recommended once the component set stabilizes).
-- No dark-mode token set yet - `darkMode: ["class"]` is already wired in `tailwind.config.js`, but
-  `semantic.json` only defines one (light) value per token today.
+Three lists are hand-maintained and must track the tokens. Nothing enforces the first two, so update
+them in the same commit as any token rename:
+
+- the Tailwind colour/spacing map in `packages/tokens/scripts/build.js`, written explicitly so class
+  names stay clean (`bg-surface`, not `bg-bg-surface`)
+- the font-size class group in `packages/ui/src/lib/utils.ts`, which teaches `tailwind-merge` that
+  the numeric scale is a font size and not a colour
+- the `PAIRINGS` table in `packages/tokens/test/tokens.test.mjs` (this one does fail loudly if a
+  pairing regresses, but it cannot know about a pairing you never added)
+
+Not yet built, roughly in priority order:
+
+- **No dark mode.** `darkMode: ["class"]` is wired in `tailwind.config.js`, but `semantic.json`
+  holds one value per token, so the file cannot express a mode at all. This is a reshape of the
+  token file and the CSS emitter, not a small addition.
+- **No icon strategy.** Four components inline their own SVG, each separately sized and stroked.
+- **No typography components.** There is a nine-step type scale and nothing that exposes it, so
+  every consumer writes `text-300 font-semibold` by hand.
+- **Inconsistent component APIs.** `Badge`, `DialogHeader`, `DialogFooter` and `Toaster` do not
+  forward refs; some components define variants through `cva` and others hand-roll `cn()`.
+- **No breakpoint scale.**
+- **No visual regression testing.** Chromatic once the component set stabilises — snapshots taken
+  before then are snapshots you will re-approve.
