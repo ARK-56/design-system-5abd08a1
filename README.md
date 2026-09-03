@@ -79,6 +79,20 @@ quietly.
 4. **Every foreground/background pairing clears WCAG.** New pairings go in the `PAIRINGS` table in
    `packages/tokens/test/tokens.test.mjs`, which fails if one drops below its threshold.
 
+### Component API conventions
+
+- **Anything that renders a host element forwards its ref and sets a `displayName`.** Enforced by
+  `packages/ui/test/ref-forwarding.test.tsx`, which also fails when a new export is neither
+  ref-forwarding nor listed in its `NO_HOST_ELEMENT` table with a stated reason — so adding an
+  export forces the decision rather than allowing it to be skipped.
+- **`className` is always accepted and merged last** through `cn()`, so a consumer can override any
+  style without fighting specificity.
+- **Variants go through `cva` and are exported as `*Variants`.** Components with a single style use
+  `cn()` directly; `cva` earns its place only where there are variants worth naming.
+- **`asChild` is offered where a component may need to become another element** — a `Button` that is
+  really a link. When the component renders children of its own alongside the consumer's, wrap the
+  consumer's in Radix `<Slottable>`, or Slot sees more than one child and throws.
+
 ## How the token pipeline works
 
 `packages/tokens/tokens/` has two files:

@@ -41,9 +41,12 @@ export const DialogContent = React.forwardRef<
 ));
 DialogContent.displayName = "DialogContent";
 
-export function DialogHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("flex flex-col gap-1.5 pb-4", className)} {...props} />;
-}
+export const DialogHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn("flex flex-col gap-1.5 pb-4", className)} {...props} />
+  )
+);
+DialogHeader.displayName = "DialogHeader";
 
 export const DialogTitle = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Title>,
@@ -61,6 +64,9 @@ export const DialogDescription = React.forwardRef<
 ));
 DialogDescription.displayName = "DialogDescription";
 
-export function DialogFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("flex items-center justify-end gap-3 pt-6", className)} {...props} />;
-}
+export const DialogFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn("flex items-center justify-end gap-3 pt-6", className)} {...props} />
+  )
+);
+DialogFooter.displayName = "DialogFooter";
