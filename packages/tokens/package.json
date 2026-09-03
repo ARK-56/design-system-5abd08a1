@@ -22,6 +22,7 @@
     "build": "node scripts/build.js",
     "dev": "node scripts/build.js --watch",
     "lint": "eslint .",
+    "test": "vitest run",
     "clean": "node -e \"require('node:fs').rmSync('build', { recursive: true, force: true })\""
   },
   "devDependencies": {

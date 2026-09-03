@@ -1,9 +1,10 @@
 {
   "color": {
     "bg": {
-      "canvas": { "value": "{color.neutral.0.value}" },
+      "canvas": { "value": "{color.neutral.50.value}" },
       "surface": { "value": "{color.neutral.0.value}" },
-      "surface-sunken": { "value": "{color.neutral.50.value}" },
+      "surface-sunken": { "value": "{color.neutral.100.value}" },
+      "surface-sunken-hover": { "value": "{color.neutral.200.value}" },
       "surface-raised": { "value": "{color.neutral.0.value}" },
       "overlay": { "value": "rgba(18, 18, 18, 0.48)" }
     },
@@ -17,27 +18,31 @@
     },
     "border": {
       "default": { "value": "{color.neutral.200.value}" },
-      "strong": { "value": "{color.neutral.300.value}" },
+      "control": { "value": "{color.neutral.500.value}" },
       "focus": { "value": "{color.brand.500.value}" }
     },
     "brand": {
-      "default": { "value": "{color.brand.500.value}" },
-      "hover": { "value": "{color.brand.600.value}" },
-      "active": { "value": "{color.brand.700.value}" },
-      "subtle": { "value": "{color.brand.50.value}" }
+      "default": { "value": "{color.brand.600.value}" },
+      "hover": { "value": "{color.brand.700.value}" },
+      "active": { "value": "{color.brand.800.value}" },
+      "subtle": { "value": "{color.brand.50.value}" },
+      "on-subtle": { "value": "{color.brand.700.value}" }
     },
     "danger": {
-      "default": { "value": "{color.red.500.value}" },
-      "hover": { "value": "{color.red.600.value}" },
-      "subtle": { "value": "{color.red.50.value}" }
+      "default": { "value": "{color.red.600.value}" },
+      "hover": { "value": "{color.red.700.value}" },
+      "subtle": { "value": "{color.red.50.value}" },
+      "on-subtle": { "value": "{color.red.700.value}" }
     },
     "warning": {
       "default": { "value": "{color.amber.500.value}" },
-      "subtle": { "value": "{color.amber.50.value}" }
+      "subtle": { "value": "{color.amber.50.value}" },
+      "on-subtle": { "value": "{color.amber.700.value}" }
     },
     "success": {
       "default": { "value": "{color.green.500.value}" },
-      "subtle": { "value": "{color.green.50.value}" }
+      "subtle": { "value": "{color.green.50.value}" },
+      "on-subtle": { "value": "{color.green.600.value}" }
     }
   },
   "font": {
@@ -46,6 +51,13 @@
       "heading": { "value": "{font.family.sans.value}" },
       "code": { "value": "{font.family.mono.value}" }
     }
+  },
+  "z": {
+    "dropdown": { "value": "{z.100.value}" },
+    "sticky": { "value": "{z.200.value}" },
+    "overlay": { "value": "{z.300.value}" },
+    "modal": { "value": "{z.400.value}" },
+    "toast": { "value": "{z.500.value}" }
   },
   "component": {
     "control": {

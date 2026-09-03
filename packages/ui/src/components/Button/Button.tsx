@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Slot } from "@radix-ui/react-slot";
+import { Slot, Slottable } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/utils";
 
@@ -9,7 +9,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary: "bg-brand text-on-brand hover:bg-brand-hover active:bg-brand-active",
-        secondary: "bg-surface-sunken text-foreground hover:bg-neutral-200",
+        secondary: "bg-surface-sunken text-foreground hover:bg-surface-sunken-hover",
         outline: "border border-border bg-transparent text-foreground hover:bg-surface-sunken",
         ghost: "bg-transparent text-foreground hover:bg-surface-sunken",
         danger: "bg-danger text-on-danger hover:bg-danger-hover"
@@ -62,7 +62,12 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             />
           </svg>
         )}
-        {children}
+        {/*
+          Slottable marks which child Slot should merge into. Without it the
+          spinner slot counts as a second child -- even when isLoading is false,
+          because `{false}` is still a child -- and asChild throws.
+        */}
+        <Slottable>{children}</Slottable>
       </Comp>
     );
   }

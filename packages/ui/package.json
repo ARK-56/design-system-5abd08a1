@@ -30,6 +30,7 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "lint": "eslint .",
+    "test": "vitest run",
     "clean": "node -e \"for (const d of ['dist', 'storybook-static', '.tmp']) require('node:fs').rmSync(d, { recursive: true, force: true })\""
   },
   "peerDependencies": {
