@@ -1,0 +1,7 @@
+node_modules
+dist
+build
+storybook-static
+.turbo
+*.log
+.DS_Store

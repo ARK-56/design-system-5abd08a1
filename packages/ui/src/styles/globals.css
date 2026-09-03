@@ -1,0 +1,46 @@
+@import "@ark-56/tokens/css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-color: theme("colors.border");
+  }
+
+  body {
+    background-color: theme("colors.canvas");
+    color: theme("colors.foreground");
+    font-family: theme("fontFamily.body");
+  }
+
+  /* Tailwind seeds --tw-ring-color with a hardcoded blue, and its ringColor.DEFAULT
+     theme key can't replace it (that path alpha-composites the value, which fails
+     for a var() colour). Set the initialiser directly so a ring utility used without
+     an explicit colour still lands on the brand's focus token. */
+  *,
+  *::before,
+  *::after {
+    --tw-ring-color: theme("colors.border-focus");
+  }
+
+  /* Visible keyboard focus everywhere, using the semantic focus tokens. */
+  :focus-visible {
+    outline: var(--component-focus-ring-width) solid theme("colors.border-focus");
+    outline-offset: var(--component-focus-ring-offset);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

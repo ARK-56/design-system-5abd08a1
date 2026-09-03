@@ -1,0 +1,30 @@
+{
+  "name": "@ark-56/tokens",
+  "version": "0.1.0",
+  "description": "Two-tier design tokens (primitives + semantic) - source of truth for the design system, swappable per client",
+  "main": "./build/js/tokens.cjs.js",
+  "module": "./build/js/tokens.esm.js",
+  "types": "./build/ts/tokens.d.ts",
+  "exports": {
+    ".": {
+      "types": "./build/ts/tokens.d.ts",
+      "import": "./build/js/tokens.esm.js",
+      "require": "./build/js/tokens.cjs.js"
+    },
+    "./css": "./build/css/variables.css",
+    "./tailwind-theme": "./build/tailwind/theme.cjs"
+  },
+  "files": [
+    "build",
+    "tokens"
+  ],
+  "scripts": {
+    "build": "node scripts/build.js",
+    "dev": "node scripts/build.js --watch",
+    "lint": "eslint .",
+    "clean": "node -e \"require('node:fs').rmSync('build', { recursive: true, force: true })\""
+  },
+  "devDependencies": {
+    "style-dictionary": "^4.1.3"
+  }
+}
