@@ -31,6 +31,38 @@ pnpm lint
 pnpm storybook        # browse every component at localhost:6006
 ```
 
+## Branching and phases
+
+`main` holds the live, tested code. Work arrives through phase branches, never directly.
+
+```bash
+git checkout main && git pull
+git checkout -b phase-1-structure     # one branch per phase
+# ...work, with tests for whatever the phase introduces...
+git merge main                        # pick up any tests main gained meanwhile
+pnpm lint && pnpm test                # must be green
+```
+
+A phase branch inherits the entire existing suite automatically — there is nothing to copy across.
+It adds its own tests on top, and both have to pass. That is the whole safety property: a phase
+cannot merge while it breaks anything that already worked.
+
+CI (`.github/workflows/ci.yml`) runs `build`, `lint` and `test` on every push to a `phase-*` branch
+and again on the pull request, so a phase is judged by the same gate twice. Merge with `--no-ff`
+so phase boundaries stay legible in history.
+
+Two habits that keep this honest:
+
+- **Merge `main` into the phase before merging back.** Otherwise the phase is validated against the
+  tests that existed when it started, not the ones that exist now.
+- **A phase that adds a constraint adds the test for it.** New colour pairing → add it to `PAIRINGS`
+  in `packages/tokens/test/tokens.test.mjs`. New rule about what components may do → add it to
+  `packages/ui/test/source-hygiene.test.ts`. A constraint no test knows about is a convention, and
+  conventions do not survive contact with a coding agent.
+
+> CI reports status but cannot block a merge on its own. Turn on branch protection for `main` in the
+> repository settings — require the `verify` check and a pull request — or the gate is advisory.
+
 ## The rules
 
 These are the constraints the whole thing rests on. All four are enforced by

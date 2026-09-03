@@ -1,0 +1,38 @@
+name: CI
+
+# A phase branch is only mergeable when this is green. It runs on the phase
+# branch itself so problems surface before a pull request exists, and again on
+# the pull request so the merge gate has something to check.
+on:
+  push:
+    branches: ["main", "phase-*"]
+  pull_request:
+    branches: ["main"]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: build - lint - test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Reads the pnpm version from the packageManager field in package.json.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Kept as separate steps so a failure names which gate broke. `pnpm test`
+      # would build on its own -- turbo's test task dependsOn build -- but a
+      # build failure reported as a test failure is a worse signal.
+      - run: pnpm build
+      - run: pnpm lint
+      - run: pnpm test
