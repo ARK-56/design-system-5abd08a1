@@ -2,7 +2,7 @@ import { type ClassValue, clsx } from "clsx";
 import { extendTailwindMerge } from "tailwind-merge";
 
 /**
- * tailwind-merge only recognises t-shirt sizes (`text-sm`, `text-lg`) as font
+ * tailwind-merge only recognises t-shirt sizes (sm, lg, xl) as font
  * sizes, so our numeric scale (`text-100`) falls through to its *text-colour*
  * group and collides with `text-foreground` / `text-on-brand` — whichever came
  * last silently wins. Registering the scale keeps size and colour independent.
