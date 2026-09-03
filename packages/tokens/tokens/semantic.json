@@ -4,6 +4,7 @@
       "canvas": { "value": "{color.neutral.50.value}" },
       "surface": { "value": "{color.neutral.0.value}" },
       "surface-sunken": { "value": "{color.neutral.100.value}" },
+      "surface-sunken-hover": { "value": "{color.neutral.200.value}" },
       "surface-raised": { "value": "{color.neutral.0.value}" },
       "overlay": { "value": "rgba(18, 18, 18, 0.48)" }
     },
@@ -17,7 +18,6 @@
     },
     "border": {
       "default": { "value": "{color.neutral.200.value}" },
-      "strong": { "value": "{color.neutral.300.value}" },
       "control": { "value": "{color.neutral.500.value}" },
       "focus": { "value": "{color.brand.500.value}" }
     },
@@ -51,6 +51,13 @@
       "heading": { "value": "{font.family.sans.value}" },
       "code": { "value": "{font.family.mono.value}" }
     }
+  },
+  "z": {
+    "dropdown": { "value": "{z.100.value}" },
+    "sticky": { "value": "{z.200.value}" },
+    "overlay": { "value": "{z.300.value}" },
+    "modal": { "value": "{z.400.value}" },
+    "toast": { "value": "{z.500.value}" }
   },
   "component": {
     "control": {

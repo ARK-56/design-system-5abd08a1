@@ -20,6 +20,7 @@ function buildTailwindColors() {
     canvas: v('color-bg-canvas'),
     surface: v('color-bg-surface'),
     'surface-sunken': v('color-bg-surface-sunken'),
+    'surface-sunken-hover': v('color-bg-surface-sunken-hover'),
     'surface-raised': v('color-bg-surface-raised'),
     overlay: v('color-bg-overlay'),
 
@@ -31,7 +32,6 @@ function buildTailwindColors() {
     link: v('color-text-link'),
 
     border: v('color-border-default'),
-    'border-strong': v('color-border-strong'),
     'border-control': v('color-border-control'),
     'border-focus': v('color-border-focus'),
 
@@ -74,13 +74,23 @@ StyleDictionary.registerFormat({
     const v = (name) => `var(--${name})`;
     const theme = {
       colors: buildTailwindColors(),
-      spacing: Object.fromEntries(
-        [0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20].map((step) => [step, v(`space-${step}`)])
-      ),
+      spacing: {
+        ...Object.fromEntries(
+          [0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20].map((step) => [step, v(`space-${step}`)])
+        ),
+        // Half steps keep Tailwind's familiar `gap-1.5` class names while moving
+        // the values onto the token scale, where a re-theme can reach them.
+        ...Object.fromEntries(
+          ['0.5', '1.5', '2.5'].map((step) => [step, v(`space-${step.replace('.', '-')}`)])
+        )
+      },
       borderRadius: Object.fromEntries(
         ['none', 'sm', 'md', 'lg', 'xl', 'full'].map((k) => [k, v(`radius-${k}`)])
       ),
       boxShadow: Object.fromEntries(['sm', 'md', 'lg'].map((k) => [k, v(`shadow-${k}`)])),
+      zIndex: Object.fromEntries(
+        ['dropdown', 'sticky', 'overlay', 'modal', 'toast'].map((k) => [k, v(`z-${k}`)])
+      ),
       fontFamily: {
         body: [v('font-family-body')],
         heading: [v('font-family-heading')],
