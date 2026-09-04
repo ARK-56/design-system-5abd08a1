@@ -46,6 +46,16 @@ describe("components consume the semantic layer only", () => {
     expect(findAll(/#[0-9a-fA-F]{3,8}\b/g)).toEqual([]);
   });
 
+  it("draws no inline SVG outside the Icon contract", () => {
+    // Icon owns the viewBox, stroke and sizing. An inline <svg> elsewhere is a
+    // second, unmanaged way to render an icon.
+    const inline = files
+      .filter(({ name }) => !name.startsWith("Icon/"))
+      .filter(({ source }) => source.includes("<svg"))
+      .map(({ name }) => name);
+    expect([...new Set(inline)]).toEqual([]);
+  });
+
   it("invents no z-index, and uses the named layers instead", () => {
     expect(findAll(/\bz-(?:\d+|\[[^\]]*\])/g)).toEqual([]);
   });

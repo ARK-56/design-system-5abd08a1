@@ -2,6 +2,7 @@ import * as React from "react";
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
 import * as LabelPrimitive from "@radix-ui/react-label";
 import { cn } from "../../lib/utils";
+import { CheckIcon } from "../Icon";
 
 export interface CheckboxProps extends React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root> {
   label?: string;
@@ -27,9 +28,7 @@ export const Checkbox = React.forwardRef<React.ElementRef<typeof CheckboxPrimiti
         {...props}
       >
         <CheckboxPrimitive.Indicator className="flex items-center justify-center text-on-brand">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-            <path d="M2 6.2L4.7 9L10 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <CheckIcon size="sm" />
         </CheckboxPrimitive.Indicator>
       </CheckboxPrimitive.Root>
     );

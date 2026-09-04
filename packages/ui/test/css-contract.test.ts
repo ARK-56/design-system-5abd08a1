@@ -78,6 +78,57 @@ describe("focus rings resolve to brand tokens, not Tailwind's default blue", () 
   });
 });
 
+describe("dark mode is a scoped swap of the same variables", () => {
+  const darkBlock = () => {
+    const start = css.indexOf(".dark{");
+    return start < 0 ? null : css.slice(start + 6, css.indexOf("}", start));
+  };
+
+  it("emits a .dark block after :root, so it wins at equal specificity", () => {
+    // `:root` and `.dark` are both specificity 0-1-0 and both match <html>,
+    // so source order is the only thing deciding which applies.
+    const root = css.indexOf(":root{");
+    const dark = css.indexOf(".dark{");
+    expect(root).toBeGreaterThan(-1);
+    expect(dark).toBeGreaterThan(root);
+  });
+
+  it("redefines the tokens a dark ground needs", () => {
+    const block = darkBlock();
+    expect(block).toContain("--color-bg-canvas:var(--color-neutral-900)");
+    expect(block).toContain("--color-brand-default:var(--color-brand-400)");
+    expect(block).toContain("--color-text-primary:var(--color-neutral-50)");
+    expect(block).toContain("--color-text-on-brand:var(--color-neutral-900)");
+  });
+
+  it("changes variables only, never a declaration a utility owns", () => {
+    // A mode that set `background-color` directly would fight the utilities
+    // instead of feeding them.
+    const declarations = (darkBlock() ?? "").split(";").filter(Boolean);
+    expect(declarations.filter((d) => !d.trim().startsWith("--"))).toEqual([]);
+  });
+
+  it("keeps utilities pointed at the variables the mode swaps", () => {
+    // The chain that makes the whole thing work: utility -> var -> mode block.
+    const exact = (selector: string) => {
+      for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+        if (m[1].split(",").includes(selector)) return m[2];
+      }
+      return null;
+    };
+    expect(exact(".bg-brand")).toBe("background-color:var(--color-brand-default)");
+    expect(exact(".text-on-brand")).toBe("color:var(--color-text-on-brand)");
+    expect(exact(".bg-surface")).toBe("background-color:var(--color-bg-surface)");
+    // The page ground reaches `body` from globals.css rather than a utility --
+    // Tailwind never emits `.bg-canvas` because nothing uses it. There are two
+    // `body` rules (preflight's, then ours), so check that one of them carries it.
+    const bodyRules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+      .filter((m) => m[1].split(",").includes("body"))
+      .map((m) => m[2]);
+    expect(bodyRules.some((d) => d.includes("background-color:var(--color-bg-canvas)"))).toBe(true);
+  });
+});
+
 describe("arbitrary token values carry the right type", () => {
   it("the card shadow sets a shadow, not a shadow colour", () => {
     const declarations = firstRuleFor("component-card-shadow");

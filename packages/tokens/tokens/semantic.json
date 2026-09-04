@@ -72,6 +72,12 @@
       "padding": { "value": "{space.6.value}" },
       "shadow": { "value": "{shadow.sm.value}" }
     },
+    "icon": {
+      "size-sm": { "value": "1rem" },
+      "size-md": { "value": "1.25rem" },
+      "size-lg": { "value": "1.5rem" },
+      "stroke": { "value": "1.75" }
+    },
     "focus-ring": {
       "width": { "value": "2px" },
       "offset": { "value": "2px" }

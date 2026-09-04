@@ -4,6 +4,10 @@ import { describe, expect, it } from "vitest";
 import * as api from "../src";
 import {
   Badge,
+  CheckIcon,
+  CloseIcon,
+  SpinnerIcon,
+  Text,
   Button,
   Card,
   CardContent,
@@ -18,6 +22,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  Heading,
+  Icon,
   Input,
   Tabs,
   TabsContent,
@@ -51,6 +57,12 @@ const RENDERS_A_HOST_ELEMENT: Record<string, (ref: Ref) => React.ReactElement> =
   CardTitle: (ref) => <CardTitle ref={ref as React.Ref<HTMLHeadingElement>} />,
   Checkbox: (ref) => <Checkbox ref={ref as React.Ref<HTMLButtonElement>} />,
   Input: (ref) => <Input ref={ref as React.Ref<HTMLInputElement>} />,
+  Heading: (ref) => <Heading ref={ref as React.Ref<HTMLHeadingElement>}>Title</Heading>,
+  Text: (ref) => <Text ref={ref as React.Ref<HTMLParagraphElement>}>Body</Text>,
+  Icon: (ref) => <Icon ref={ref as React.Ref<SVGSVGElement>} />,
+  CheckIcon: (ref) => <CheckIcon ref={ref as React.Ref<SVGSVGElement>} />,
+  CloseIcon: (ref) => <CloseIcon ref={ref as React.Ref<SVGSVGElement>} />,
+  SpinnerIcon: (ref) => <SpinnerIcon ref={ref as React.Ref<SVGSVGElement>} />,
   ThemeProvider: (ref) => <ThemeProvider ref={ref}>content</ThemeProvider>,
 
   DialogHeader: (ref) => <DialogHeader ref={ref as React.Ref<HTMLDivElement>} />,
@@ -167,6 +179,9 @@ const RENDERS_A_HOST_ELEMENT: Record<string, (ref: Ref) => React.ReactElement> =
  * below fails otherwise, so the decision cannot be skipped.
  */
 const NO_HOST_ELEMENT: Record<string, string> = {
+  iconVariants: "cva variant builder, not a component",
+  headingVariants: "cva variant builder, not a component",
+  textVariants: "cva variant builder, not a component",
   Dialog: "Radix Root: context only, renders no DOM",
   ToastProvider: "Radix Provider: context only, renders no DOM",
   Toaster: "mount point that renders a provider and a list, not one element",
@@ -179,7 +194,8 @@ describe("every component forwards its ref", () => {
   it.each(Object.keys(RENDERS_A_HOST_ELEMENT).sort())("%s", (name) => {
     const ref = React.createRef<HTMLElement>();
     render(RENDERS_A_HOST_ELEMENT[name](ref));
-    expect(ref.current, `${name} did not forward its ref`).toBeInstanceOf(HTMLElement);
+    // Element, not HTMLElement: the icons resolve to SVGSVGElement.
+    expect(ref.current, `${name} did not forward its ref`).toBeInstanceOf(Element);
   });
 });
 

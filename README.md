@@ -26,7 +26,7 @@ packages/
 ```bash
 pnpm install
 pnpm build            # builds tokens, then ui, in the right order (via Turborepo)
-pnpm test             # 66 tests: token contract, CSS contract, behaviour, a11y
+pnpm test             # 131 tests: token contract, CSS contract, behaviour, a11y
 pnpm lint
 pnpm storybook        # browse every component at localhost:6006
 ```
@@ -95,11 +95,13 @@ quietly.
 
 ## How the token pipeline works
 
-`packages/tokens/tokens/` has two files:
+`packages/tokens/tokens/` has three files:
 
 - **`primitives.json`** — raw scales with no meaning: `color.neutral.900`, `space.4`, `radius.md`,
   `z.300`. Never referenced directly by components.
 - **`semantic.json`** — the layer components actually consume. Each value points at a primitive.
+- **`semantic.dark.json`** — a sparse override redefining only what a dark ground changes. See
+  [Dark mode](#dark-mode).
 
 `pnpm tokens:build` (Style Dictionary) turns those into:
 
@@ -134,10 +136,40 @@ The full list components are allowed to use, with the Tailwind class each produc
 | `color.{brand,danger,warning,success}.subtle` | `bg-brand-subtle`, … | tinted status backgrounds |
 | `color.{brand,danger,warning,success}.on-subtle` | `text-brand-on-subtle`, … | text **on** those tints |
 | `z.{dropdown,sticky,overlay,modal,toast}` | `z-modal`, … | stacking order |
+| `component.icon.{size-sm,size-md,size-lg,stroke}` | via `<Icon size>` | icon metrics |
 | `component.*` | `h-[var(--component-control-height-md)]`, … | per-component metrics |
 
 The `subtle` / `on-subtle` split matters: a foreground chosen to sit on white does not clear
 contrast on a tinted wash. Use `on-subtle` whenever the background is a `subtle`.
+
+## Dark mode
+
+`semantic.json` is the light set; `semantic.dark.json` is a sparse override that redefines only the
+colour tokens, pointing them at different primitive steps. The build emits both into one stylesheet:
+
+```css
+:root  { --color-brand-default: var(--color-brand-600); }   /* teal, white text */
+.dark  { --color-brand-default: var(--color-brand-400); }   /* bright teal, dark text */
+```
+
+Add `class="dark"` to `<html>` and everything follows, because every component reads the same
+variables. No component knows a mode exists. Storybook has a Mode toggle in the toolbar.
+
+Two rules the tests enforce. Every colour token must have a dark value — a missing one would
+silently inherit the light value and break on a dark ground. And `.dark` may only redefine
+variables, never set a property a utility owns, or the mode would fight the utilities instead of
+feeding them.
+
+Dark inverts the fill/text relationship for filled buttons: light mode is a dark fill with white
+text, dark mode is a bright fill with dark text. That is why `text.on-brand` and `text.on-danger`
+exist as tokens rather than being hardcoded to white. All 20 pairings are checked in both modes.
+
+## Breakpoints
+
+`breakpoint.{sm,md,lg,xl,2xl}` feed Tailwind's `screens`. These are the one token category that
+**cannot** flow through CSS custom properties — a media query condition cannot read `var()` — so
+they are emitted as raw values. Changing them needs a rebuild, and a runtime `ThemeProvider`
+override cannot reach them.
 
 ## Re-theming for a new client
 
@@ -167,9 +199,19 @@ client using the workflow above.
 
 ## Components (v0.1)
 
-Button, Input, Checkbox, Card, Badge, Dialog, Tabs, Toast. Interactive and accessible behaviour
-comes from Radix UI primitives; visual styling comes entirely from token-driven Tailwind classes.
-Variants are defined with `class-variance-authority` (see any component's `*Variants` export).
+Button, Input, Checkbox, Card, Badge, Dialog, Tabs, Toast, plus `Heading`/`Text` and `Icon`.
+Interactive and accessible behaviour comes from Radix UI primitives; visual styling comes entirely
+from token-driven Tailwind classes. Variants are defined with `class-variance-authority` (see any
+component's `*Variants` export).
+
+`Heading` and `Text` exist so consuming code never hardcodes `text-500 font-semibold` — once those
+literals spread through client codebases the scale can no longer be changed. On `Heading`, `level`
+and `size` are separate: the tag belongs to the document outline, the size to the layout.
+
+`Icon` is the icon *contract*, not an icon set: a 24-unit viewBox, `currentColor`, token-driven size
+and stroke. The library ships only the three icons its own components need; wrap any other path data
+— or a third-party set — in `<Icon>` and it renders consistently. A test fails the build on any
+inline `<svg>` outside `Icon/`.
 
 Storybook is the working documentation.
 
@@ -225,16 +267,17 @@ them in the same commit as any token rename:
 - the `PAIRINGS` table in `packages/tokens/test/tokens.test.mjs` (this one does fail loudly if a
   pairing regresses, but it cannot know about a pairing you never added)
 
-Not yet built, roughly in priority order:
+Not yet built:
 
-- **No dark mode.** `darkMode: ["class"]` is wired in `tailwind.config.js`, but `semantic.json`
-  holds one value per token, so the file cannot express a mode at all. This is a reshape of the
-  token file and the CSS emitter, not a small addition.
-- **No icon strategy.** Four components inline their own SVG, each separately sized and stroked.
-- **No typography components.** There is a nine-step type scale and nothing that exposes it, so
-  every consumer writes `text-300 font-semibold` by hand.
-- **Inconsistent component APIs.** `Badge`, `DialogHeader`, `DialogFooter` and `Toaster` do not
-  forward refs; some components define variants through `cva` and others hand-roll `cn()`.
-- **No breakpoint scale.**
+- **A thin component set.** Eight components plus typography and icons does not cover a real site.
+  The control layer comes first — Select, Radio group, Switch, Textarea, Tooltip, Popover,
+  DropdownMenu, Table, Alert, Avatar, Skeleton — because a marketing contact form and a dashboard
+  filter panel are built from the same parts.
+- **No form abstraction.** `Input` hand-rolls its label, hint, error and `aria-describedby` wiring.
+  Extract a `Field` wrapper before Textarea, Select and Radio copy that block.
+- **Nothing agent-readable yet.** No `AGENTS.md` shipped in the package, no generated component
+  manifest. The rules above are enforced by tests but not stated anywhere an agent reads first.
 - **No visual regression testing.** Chromatic once the component set stabilises — snapshots taken
   before then are snapshots you will re-approve.
+- **Nothing has been visually reviewed.** The tests check values, not appearance. They would pass on
+  an ugly system.

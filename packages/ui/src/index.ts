@@ -1,6 +1,9 @@
 export { ThemeProvider, type ThemeOverrides, type ThemeProviderProps } from "./theme/ThemeProvider";
 export { cn } from "./lib/utils";
 
+export * from "./components/Icon";
+export * from "./components/Typography";
+
 export * from "./components/Button";
 export * from "./components/Input";
 export * from "./components/Checkbox";
