@@ -1,21 +1,39 @@
 /**
  * Builds the token pipeline: tokens/primitives.json + tokens/semantic.json
- * -> build/css/variables.css   (CSS custom properties, semantic tokens reference primitive vars)
+ * (+ tokens/semantic.dark.json)
+ * -> build/css/variables.css   (:root plus a .dark block, semantic tokens
+ *                               referencing primitive vars)
  * -> build/js/tokens.{cjs,esm}.js
  * -> build/ts/tokens.d.ts
  * -> build/tailwind/theme.cjs  (Tailwind theme.extend consuming the CSS vars)
  *
- * To re-theme for a client: replace tokens/primitives.json (and/or override values in
- * tokens/semantic.json) and re-run `pnpm build`. Component code never changes because
- * components only ever consume the semantic layer.
+ * To re-theme for a client: replace tokens/primitives.json (and/or override
+ * values in the semantic files) and re-run `pnpm build`. Component code never
+ * changes because components only ever consume the semantic layer.
  */
+const fs = require('node:fs');
+const path = require('node:path');
 const StyleDictionary = require('style-dictionary').default;
+
+const primitives = require('../tokens/primitives.json');
+const darkOverrides = require('../tokens/semantic.dark.json');
+
+const v = (name) => `var(--${name})`;
+
+/** Dot-paths the dark set redefines, so the .dark block emits only those. */
+function overriddenPaths(node, prefix = []) {
+  return Object.entries(node).flatMap(([key, value]) =>
+    value && typeof value === 'object' && 'value' in value
+      ? [[...prefix, key].join('.')]
+      : overriddenPaths(value, [...prefix, key])
+  );
+}
+const DARK_PATHS = new Set(overriddenPaths(darkOverrides));
 
 // Maps semantic token CSS var names -> Tailwind theme keys.
 // Kept explicit (rather than auto-derived) so Tailwind class names stay clean
 // (`bg-surface`, not `bg-bg-surface`). Update alongside tokens/semantic.json.
 function buildTailwindColors() {
-  const v = (name) => `var(--${name})`;
   return {
     canvas: v('color-bg-canvas'),
     surface: v('color-bg-surface'),
@@ -58,7 +76,8 @@ function buildTailwindColors() {
       subtle: v('color-success-subtle'),
       'on-subtle': v('color-success-on-subtle')
     },
-    // Primitive neutral scale exposed directly for one-off utility needs.
+    // Primitive neutral scale exposed directly for one-off utility needs in
+    // consuming apps. Components must not use it -- see source-hygiene tests.
     neutral: Object.fromEntries(
       [0, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000].map((step) => [
         step,
@@ -71,7 +90,6 @@ function buildTailwindColors() {
 StyleDictionary.registerFormat({
   name: 'tailwind/theme',
   format: () => {
-    const v = (name) => `var(--${name})`;
     const theme = {
       colors: buildTailwindColors(),
       spacing: {
@@ -90,6 +108,13 @@ StyleDictionary.registerFormat({
       boxShadow: Object.fromEntries(['sm', 'md', 'lg'].map((k) => [k, v(`shadow-${k}`)])),
       zIndex: Object.fromEntries(
         ['dropdown', 'sticky', 'overlay', 'modal', 'toast'].map((k) => [k, v(`z-${k}`)])
+      ),
+      // Breakpoints are the one category that cannot flow through CSS custom
+      // properties: a media query condition can't read var(). These are emitted
+      // as raw values, so changing them needs a rebuild -- a runtime
+      // ThemeProvider override cannot reach them.
+      screens: Object.fromEntries(
+        Object.entries(primitives.breakpoint).map(([key, token]) => [key, token.value])
       ),
       fontFamily: {
         body: [v('font-family-body')],
@@ -111,19 +136,20 @@ StyleDictionary.registerFormat({
   }
 });
 
-const sd = new StyleDictionary({
+const cssFile = (destination, selector, filter) => ({
+  destination,
+  format: 'css/variables',
+  options: { outputReferences: true, selector },
+  ...(filter ? { filter } : {})
+});
+
+const light = new StyleDictionary({
   source: ['tokens/primitives.json', 'tokens/semantic.json'],
   platforms: {
     css: {
       transformGroup: 'css',
       buildPath: 'build/css/',
-      files: [
-        {
-          destination: 'variables.css',
-          format: 'css/variables',
-          options: { outputReferences: true, selector: ':root' }
-        }
-      ]
+      files: [cssFile('variables.css', ':root')]
     },
     js: {
       transformGroup: 'js',
@@ -146,7 +172,46 @@ const sd = new StyleDictionary({
   }
 });
 
-sd.buildAllPlatforms().catch((err) => {
+// A second pass, because the dark set is a sparse override rather than a whole
+// theme. It deliberately does NOT load semantic.json: the dark file redefines
+// those same paths, which Style Dictionary would report as ~90 collisions. It
+// needs only the primitives its references resolve against.
+const dark = new StyleDictionary({
+  source: ['tokens/primitives.json', 'tokens/semantic.dark.json'],
+  // The one remaining warning -- references to primitives filtered out of this
+  // file -- is by construction: those vars are emitted once in :root by the
+  // light pass, and resolve there at runtime.
+  log: { warnings: 'disabled' },
+  platforms: {
+    css: {
+      transformGroup: 'css',
+      buildPath: 'build/css/',
+      files: [
+        cssFile('_dark.css', '.dark', (token) => DARK_PATHS.has(token.path.join('.')))
+      ]
+    }
+  }
+});
+
+async function main() {
+  await light.buildAllPlatforms();
+  await dark.buildAllPlatforms();
+
+  // Merge the two blocks into one stylesheet, so consumers keep importing a
+  // single "@ark-56/tokens/css".
+  const dir = path.join(__dirname, '../build/css');
+  const base = fs.readFileSync(path.join(dir, 'variables.css'), 'utf8').trimEnd();
+  const overlay = fs.readFileSync(path.join(dir, '_dark.css'), 'utf8');
+  const block = overlay.slice(overlay.indexOf('.dark')).trimEnd();
+
+  fs.writeFileSync(
+    path.join(dir, 'variables.css'),
+    `${base}\n\n/* Dark mode. Only the semantic tokens that differ; primitives are shared. */\n${block}\n`
+  );
+  fs.unlinkSync(path.join(dir, '_dark.css'));
+}
+
+main().catch((err) => {
   console.error(err);
   process.exit(1);
 });

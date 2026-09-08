@@ -3,8 +3,11 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 const dir = fileURLToPath(new URL("../tokens/", import.meta.url));
-const primitives = JSON.parse(readFileSync(`${dir}primitives.json`, "utf8"));
-const semantic = JSON.parse(readFileSync(`${dir}semantic.json`, "utf8"));
+const read = (name) => JSON.parse(readFileSync(`${dir}${name}`, "utf8"));
+
+const primitives = read("primitives.json");
+const semantic = read("semantic.json");
+const semanticDark = read("semantic.dark.json");
 
 const REFERENCE = /^\{(.+)\.value\}$/;
 
@@ -21,7 +24,12 @@ const resolve = (value) => {
   const m = REFERENCE.exec(value);
   return m ? at(primitives, m[1])?.value : value;
 };
-const token = (path) => resolve(at(semantic, path).value);
+
+/** Resolve a semantic path in a mode; dark falls back to light where unset. */
+const token = (path, mode = "light") => {
+  const source = mode === "dark" ? at(semanticDark, path) ?? at(semantic, path) : at(semantic, path);
+  return resolve(source.value);
+};
 
 const luminance = (hex) => {
   const channels = [1, 3, 5]
@@ -37,17 +45,21 @@ const contrast = (a, b) => {
 describe("semantic layer integrity", () => {
   it("every reference points at a primitive that exists", () => {
     const dangling = [];
-    for (const [path, value] of leaves(semantic)) {
-      const m = REFERENCE.exec(value);
-      if (m && at(primitives, m[1]) === undefined) dangling.push(`${path} -> {${m[1]}}`);
+    for (const [file, tree] of [["semantic", semantic], ["semantic.dark", semanticDark]]) {
+      for (const [path, value] of leaves(tree)) {
+        const m = REFERENCE.exec(value);
+        if (m && at(primitives, m[1]) === undefined) dangling.push(`${file}: ${path} -> {${m[1]}}`);
+      }
     }
     expect(dangling).toEqual([]);
   });
 
   it("no semantic token hardcodes a hex value instead of referencing a primitive", () => {
     const hardcoded = [];
-    for (const [path, value] of leaves(semantic)) {
-      if (/^#[0-9a-f]{3,8}$/i.test(value)) hardcoded.push(`${path} = ${value}`);
+    for (const [file, tree] of [["semantic", semantic], ["semantic.dark", semanticDark]]) {
+      for (const [path, value] of leaves(tree)) {
+        if (/^#[0-9a-f]{3,8}$/i.test(value)) hardcoded.push(`${file}: ${path} = ${value}`);
+      }
     }
     expect(hardcoded).toEqual([]);
   });
@@ -58,6 +70,27 @@ describe("semantic layer integrity", () => {
         expect.arrayContaining(["default", "subtle", "on-subtle"])
       );
     }
+  });
+});
+
+describe("mode coverage", () => {
+  it("the dark set defines a value for every colour token", () => {
+    // Colour is mode-dependent by definition. A token with no dark value would
+    // silently inherit the light one and break on a dark ground, so adding a
+    // colour token has to mean adding its dark counterpart.
+    const lightColours = [...leaves(semantic.color)].map(([path]) => path);
+    const darkColours = new Set([...leaves(semanticDark.color)].map(([path]) => path));
+    expect(lightColours.filter((path) => !darkColours.has(path))).toEqual([]);
+  });
+
+  it("defines nothing in dark that light does not have", () => {
+    const lightColours = new Set([...leaves(semantic.color)].map(([path]) => path));
+    const darkColours = [...leaves(semanticDark.color)].map(([path]) => path);
+    expect(darkColours.filter((path) => !lightColours.has(path))).toEqual([]);
+  });
+
+  it("leaves non-colour tokens mode-independent", () => {
+    expect(Object.keys(semanticDark)).toEqual(["color"]);
   });
 });
 
@@ -76,6 +109,7 @@ const PAIRINGS = [
   ["Body text on canvas", "color.text.primary", "color.bg.canvas", 4.5],
   ["Body text on surface", "color.text.primary", "color.bg.surface", 4.5],
   ["Secondary text on canvas", "color.text.secondary", "color.bg.canvas", 4.5],
+  ["Secondary text on surface", "color.text.secondary", "color.bg.surface", 4.5],
   ["Secondary text on sunken", "color.text.secondary", "color.bg.surface-sunken", 4.5],
   ["Link on canvas", "color.text.link", "color.bg.canvas", 4.5],
   ["Control border on surface", "color.border.control", "color.bg.surface", 3],
@@ -85,8 +119,10 @@ const PAIRINGS = [
   ["Input error border", "color.danger.default", "color.bg.surface", 3]
 ];
 
-describe("WCAG contrast of every pairing the components compose", () => {
-  it.each(PAIRINGS)("%s", (_label, fg, bg, required) => {
-    expect(contrast(token(fg), token(bg))).toBeGreaterThanOrEqual(required);
+for (const mode of ["light", "dark"]) {
+  describe(`WCAG contrast in ${mode} mode`, () => {
+    it.each(PAIRINGS)("%s", (_label, fg, bg, required) => {
+      expect(contrast(token(fg, mode), token(bg, mode))).toBeGreaterThanOrEqual(required);
+    });
   });
-});
+}

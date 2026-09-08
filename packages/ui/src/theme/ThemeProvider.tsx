@@ -25,7 +25,10 @@ export interface ThemeProviderProps {
  * app once with no `theme` prop to use the default tokens, or wrap a section
  * with a `theme` override to preview/run a different client brand inline.
  */
-export function ThemeProvider({ theme, as: Component = "div", className, children }: ThemeProviderProps) {
+export const ThemeProvider = React.forwardRef<HTMLElement, ThemeProviderProps>(function ThemeProvider(
+  { theme, as: Component = "div", className, children },
+  ref
+) {
   const style = React.useMemo(() => {
     if (!theme) return undefined;
     const vars: Record<string, string> = {};
@@ -36,8 +39,8 @@ export function ThemeProvider({ theme, as: Component = "div", className, childre
   }, [theme]);
 
   return (
-    <Component className={className} style={style}>
+    <Component ref={ref} className={className} style={style}>
       {children}
     </Component>
   );
-}
+});

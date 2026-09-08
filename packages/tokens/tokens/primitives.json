@@ -29,22 +29,26 @@
     "red": {
       "50": { "value": "#fdf1f0" },
       "300": { "value": "#f0a8a3" },
+      "400": { "value": "#e8877c" },
       "500": { "value": "#d84c3e" },
       "600": { "value": "#b53a2e" },
-      "700": { "value": "#8f2c22" }
+      "700": { "value": "#8f2c22" },
+      "900": { "value": "#2e1512" }
     },
     "amber": {
       "50": { "value": "#fdf6e8" },
       "300": { "value": "#f2c869" },
       "500": { "value": "#c98a1a" },
       "600": { "value": "#a06e14" },
-      "700": { "value": "#8a5f11" }
+      "700": { "value": "#8a5f11" },
+      "900": { "value": "#2e2410" }
     },
     "green": {
       "50": { "value": "#ecf7f0" },
       "300": { "value": "#8ecfa4" },
       "500": { "value": "#2f8f52" },
-      "600": { "value": "#22703f" }
+      "600": { "value": "#22703f" },
+      "900": { "value": "#132419" }
     }
   },
   "font": {
@@ -110,6 +114,13 @@
       "thin": { "value": "1px" },
       "thick": { "value": "2px" }
     }
+  },
+  "breakpoint": {
+    "sm": { "value": "640px" },
+    "md": { "value": "768px" },
+    "lg": { "value": "1024px" },
+    "xl": { "value": "1280px" },
+    "2xl": { "value": "1536px" }
   },
   "z": {
     "100": { "value": "1000" },
