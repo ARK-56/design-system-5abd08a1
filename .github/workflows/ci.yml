@@ -5,7 +5,7 @@ name: CI
 # the pull request so the merge gate has something to check.
 on:
   push:
-    branches: ["main", "phase-*"]
+    branches: ["main", "phase-*", "fix/*"]
   pull_request:
     branches: ["main"]
   # lets you trigger a run by hand from the Actions tab
@@ -28,7 +28,10 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # vitest 5 needs ^22.12, jsdom 30 needs ^22.22.2 or ^24.15, eslint 10
+          # needs ^22.13 or >=24. Node 24 clears all three; Node 20 clears none of
+          # the first two, which is what made every run before this one fail.
+          node-version: 24
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile

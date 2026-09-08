@@ -18,7 +18,7 @@ packages/
 
 ## Requirements
 
-- Node >= 18
+- Node >= 22.22.2 (the dev toolchain floor: vitest 5, jsdom 30, eslint 10). CI runs Node 24.
 - pnpm 9 (`corepack enable && corepack prepare pnpm@9 --activate`)
 
 ## Getting started
